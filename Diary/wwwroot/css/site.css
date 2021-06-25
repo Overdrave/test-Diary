@@ -55,17 +55,64 @@ button.accept-policy {
 -------------------------------------------------- */
 html {
   position: relative;
-  min-height: 100%;
 }
 
 body {
-  /* Margin bottom by footer height */
+   /*Margin bottom by footer height */
   margin-bottom: 60px;
 }
+
+
 .footer {
   position: absolute;
   bottom: 0;
   width: 100%;
   white-space: nowrap;
-  line-height: 60px; /* Vertically center the text there */
+  line-height: 60px;  /*Vertically center the text there */
+}
+
+
+/* Календарь
+-------------------------------------------------- */
+.currentMonth {
+    font-size: 32px;
+    width: 100%;
+    text-align: center;
+}
+
+.calendar tr th {
+    background-color: aqua;
+    min-width: 10%;
+    width: 10%;
+    padding: 10px;
+}
+
+.calendar tr:hover {
+    background-color: lightblue;
+}
+
+.calendar tr td{
+    text-align: left;
+    vertical-align: top;
+    padding-left: 20px;
+    padding-top: 20px;
+}
+
+.calendar td:not(.padding) {
+    /*background-image: url("/Images/cell.jpg"); */
+    background-size: 150px;
+    width: 150px;
+    height: 150px;
+}
+
+    .calendar td:not(.padding):hover {
+        /*background-image: url("/Images/cell.jpg"); */
+        background-color: lightcyan;
+        background-size: 150px;
+        width: 150px;
+        height: 150px;
+    }
+
+.calendar td.padding {
+    min-height: 150px;
 }

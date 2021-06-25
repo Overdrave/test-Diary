@@ -2,9 +2,46 @@
 @model IndexModel
 @{
     ViewData["Title"] = "Home page";
+    string imagePath = "/Images/cell.jpg";
+    //Каждая кнопка даты по сути представляет собой установку фильтров: С 0 часов выбранного дня до 0 часов следующего дня (это позволит использовать реюзать запрос и для поиска)
+    DateTime dateFrom = DateTime.Now.Date;
+    DateTime dateTo = dateFrom.AddDays(1);
+    string monthStr = DateTime.Now.ToString("MMMM");
+    int year = DateTime.Now.Year;
+    DateTime firstDayOfMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+    var dayOfWeek = firstDayOfMonth.DayOfWeek;
+    DateTime startDaysFrom = firstDayOfMonth.AddDays(-(((int)dayOfWeek-1) % 7));
+    System.Diagnostics.Debug.WriteLine("");
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+
+<h1 class="display-4">Приложение "Ежедневник"</h1>
+<div class="calendar currentMonth">@monthStr, @year </div>
+<table width="100%" class="calendar" cellspacing="0" cellpadding="4" border="1">
+    <tr>
+        <th class="padding"> </th>
+        <th class="workday">Пн</th>
+        <th class="workday">Вт</th>
+        <th class="workday">Ср</th>
+        <th class="workday">Чт</th>
+        <th class="workday">Пт</th>
+        <th class="weekend">Сб</th>
+        <th class="weekend">Вс</th>
+        <th class="padding"> </th>
+    </tr>
+    
+    @{ 
+        for (int i=0;i<5;i++)
+        {
+            <tr>
+            <td class="padding"> </td>
+            @for (int j = 0; j < 7; j++)
+            {
+                <td> @startDaysFrom.AddDays(i*7+j).Day.ToString()</td>
+            }
+            <td class="padding"> </td>
+            </tr>
+        }
+    }
+
+</table>

@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
+using System.Drawing;
 
 namespace Diary.Pages
 {
@@ -19,8 +20,8 @@ namespace Diary.Pages
 
         public void OnGet()
         {
-            //Commentary
-            //More commentary
+            string dateTime = new DateTime(2021,06,24).ToShortDateString();
+            ViewData["TimeStamp"] = dateTime;
         }
     }
 }

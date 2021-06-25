@@ -24,6 +24,7 @@ namespace Diary
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddRazorPages();
+            //services.AddMvc();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -45,7 +46,7 @@ namespace Diary
 
             app.UseRouting();
 
-            app.UseAuthorization();
+            //app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
             {
