@@ -98,12 +98,20 @@ body {
     padding-top: 20px;
 }
 
+
+
 .calendar td:not(.padding) {
     /*background-image: url("/Images/cell.jpg"); */
     background-size: 150px;
     width: 150px;
     height: 150px;
 }
+
+.calendar th.weekend, .calendar td.weekend {
+    background-color: lightgreen;
+}
+
+
 
     .calendar td:not(.padding):hover {
         /*background-image: url("/Images/cell.jpg"); */
@@ -113,6 +121,17 @@ body {
         height: 150px;
     }
 
+
 .calendar td.padding {
     min-height: 150px;
+}
+
+.calendar td a {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.calendar td.otherMonth a {
+    color: gray;
 }

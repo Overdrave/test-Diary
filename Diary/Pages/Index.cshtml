@@ -2,46 +2,162 @@
 @model IndexModel
 @{
     ViewData["Title"] = "Home page";
-    string imagePath = "/Images/cell.jpg";
-    //Каждая кнопка даты по сути представляет собой установку фильтров: С 0 часов выбранного дня до 0 часов следующего дня (это позволит использовать реюзать запрос и для поиска)
-    DateTime dateFrom = DateTime.Now.Date;
-    DateTime dateTo = dateFrom.AddDays(1);
-    string monthStr = DateTime.Now.ToString("MMMM");
-    int year = DateTime.Now.Year;
-    DateTime firstDayOfMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
-    var dayOfWeek = firstDayOfMonth.DayOfWeek;
-    DateTime startDaysFrom = firstDayOfMonth.AddDays(-(((int)dayOfWeek-1) % 7));
-    System.Diagnostics.Debug.WriteLine("");
+
+
+
+}
+
+@functions
+{
+    private void DrawCalendar(DateTime selectedDate)
+    {
+        //Каждая кнопка даты по сути представляет собой установку фильтров: С 0 часов выбранного дня до 0 часов следующего дня
+        string monthStr = selectedDate.ToString("MMMM");
+        int year = selectedDate.Year;
+        DateTime firstDayOfMonth = new DateTime(selectedDate.Year, selectedDate.Month, 1);
+        var dayOfWeek = firstDayOfMonth.DayOfWeek;
+        /* Находим первый день для отображения: вычитаем из первого дня месяца количество дней от начала недели*/
+        DateTime startDaysFrom = firstDayOfMonth.AddDays(-(((int)dayOfWeek - 1 + 7) % 7));
+        if (startDaysFrom.Day == firstDayOfMonth.Day)
+        {
+            startDaysFrom = startDaysFrom.AddDays(-7);
+        }
+
+        <div class="calendar currentMonth">@monthStr, @year </div>
+        <table width="100%" class="calendar" cellspacing="0" cellpadding="4" border="1">
+            <tr>
+                <th class="padding"> </th>
+                <th class="workday">Пн</th>
+                <th class="workday">Вт</th>
+                <th class="workday">Ср</th>
+                <th class="workday">Чт</th>
+                <th class="workday">Пт</th>
+                <th class="weekend">Сб</th>
+                <th class="weekend">Вс</th>
+                <th class="padding"> </th>
+            </tr>
+
+            @{
+                for (int i = 0; i < 6; i++)
+                {
+                    <tr>
+                        <td class="padding"> </td>
+                        @for (int j = 0; j < 7; j++)
+                        {
+                            var cellClass = (j > 4) ? "weekend" : "workday";
+                            var thisday = startDaysFrom.AddDays(i * 7 + j);
+                            cellClass += (thisday.Month != selectedDate.Month) ? " otherMonth" : "";
+
+
+                            <td class="@cellClass" value=@thisday.ToString("yyyy-MM-ddTHH:mm")>
+                                <a href="/Index?dateFrom=@thisday.ToString("yyyy-MM-ddTHH:mm")&dateTo=@thisday.AddDays(1).ToString("yyyy-MM-ddTHH:mm")" target="_self">
+                                    @thisday.Day.ToString()
+                                </a>
+                            </td>
+
+                        }
+                        <td class="padding"> </td>
+                    </tr>
+                }
+            }
+
+        </table>
+    }
+
+    private async Task DrawTaskList(DateTime dFrom, DateTime dTo)
+    {
+        /*Получаем коллекцию дел из БД*/
+
+        /**/
+
+        <label> Выбрано @dFrom по @dTo </label>
+
+        <div class="form">
+            <form id="form1" method="post">
+                <h3>Новая заметка</h3>
+                <div class="data">
+                    <div>
+                        <label>Тип заметки</label>
+                        <select name="entryType">
+                            <option value="0">Памятка</option>
+                            <option value="1">Встреча</option>
+                            <option value="2">Дело</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Название</label>
+                        <input name="entrySubject" />
+                    </div>
+                    <div>
+                        <label>Комментарий</label>
+                        <input name="entryDetails" />
+                    </div>
+                    <div>
+                        <label>Дата начала</label>
+                        <input type="datetime-local" name="entryDateFrom" />
+                    </div>
+                    <div>
+                        <label>Дата завершения</label>
+                        <input type="datetime-local" name="entryDateTo" />
+                    </div>
+                    <div>
+                        <label>Место</label>
+                        <input name="entryPlace" />
+                    </div>
+                    <input type="submit" value="Добавить событие" />
+                </div>
+            </form>
+        </div>
+
+        <p />
+        <h3>Запланированные события</h3>
+
+        <table border="1" width="100%" cellspacing="0" cellpadding="4">
+            @foreach (var entry in Model.entries)
+            {
+                string typeStr = "Памятка";
+                switch (entry.Type)
+                {
+                    case 1:
+                        typeStr = "Встреча";
+                        break;
+                    case 2:
+                        typeStr = "Дело";
+                        break;
+                }
+                bool useDateTo = (entry.Type != 0);
+                bool usePlace = (entry.Type == 1);
+
+                <tr>
+                    <td colspan="@(useDateTo ? 1 : 2)"> @entry.dateStart </td>
+                    @if (useDateTo)
+                    {
+                        <td> @entry.dateFinish </td>
+                    }
+                    <td> @entry.Subject </td>
+                    <td colspan="@(usePlace ? 1 : 2)"> @entry.Details </td>
+                    @if (usePlace)
+                    {
+                        <td> @entry.Place </td>
+                    }
+                </tr>
+            }
+        </table>
+
+
+    }
+
+
 }
 
 
 <h1 class="display-4">Приложение "Ежедневник"</h1>
-<div class="calendar currentMonth">@monthStr, @year </div>
-<table width="100%" class="calendar" cellspacing="0" cellpadding="4" border="1">
-    <tr>
-        <th class="padding"> </th>
-        <th class="workday">Пн</th>
-        <th class="workday">Вт</th>
-        <th class="workday">Ср</th>
-        <th class="workday">Чт</th>
-        <th class="workday">Пт</th>
-        <th class="weekend">Сб</th>
-        <th class="weekend">Вс</th>
-        <th class="padding"> </th>
-    </tr>
-    
-    @{ 
-        for (int i=0;i<5;i++)
-        {
-            <tr>
-            <td class="padding"> </td>
-            @for (int j = 0; j < 7; j++)
-            {
-                <td> @startDaysFrom.AddDays(i*7+j).Day.ToString()</td>
-            }
-            <td class="padding"> </td>
-            </tr>
-        }
-    }
+@{
+    DateTime dateFrom = DateTime.Parse(Model.dateFrom.ToString());
+    DateTime dateTo = DateTime.Parse(Model.dateTo.ToString());
+    DrawCalendar(dateFrom);
+    await DrawTaskList(dateFrom, dateTo);
 
-</table>
+}
+
+
