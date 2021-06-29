@@ -52,6 +52,7 @@ namespace Diary
             {
                 endpoints.MapRazorPages();
             });
+
         }
     }
 }
