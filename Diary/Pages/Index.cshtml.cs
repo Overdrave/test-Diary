@@ -16,7 +16,7 @@ namespace Diary.Pages
         public DateTime timeNow = DateTime.Now;
         public DateTime dateFrom;
         public DateTime dateTo;
-        public bool allowTasks = true;
+        public bool allowTasks = true; //Возможно, лучше всё же использовать куки, чтобы хранить фильтры...
         public bool allowNotes = true;
         public bool allowMeetings = true;
 
@@ -107,13 +107,16 @@ namespace Diary.Pages
             {
                 //Иначе же применяем фильтры и достаём
                 notes = from n in context.Notes
-                        where this.allowNotes && n.dateStart <= this.dateTo && n.dateStart >= this.dateFrom && (n.Subject.ToLower().Contains(searchPattern.ToLower()) || (searchPattern=="") || n.Details.ToLower().Contains(searchPattern.ToLower()))
-                        select n;
+                        where this.allowNotes && n.dateStart <= this.dateTo && n.dateStart >= this.dateFrom && 
+                        (n.Subject.ToLower().Contains(searchPattern.ToLower()) || (searchPattern=="") || n.Details.ToLower().Contains(searchPattern.ToLower())) //Условие (searchPattern=="") необходимо из-за странной работы ToLower() к пустой строке внутри запроса LinQ.
+                        select n; 
                 meetings = from m in context.Meetings
-                           where this.allowMeetings && m.dateStart <= this.dateTo && m.dateFinish >= this.dateFrom && (m.Subject.ToLower().Contains(searchPattern.ToLower()) || (searchPattern == "") || m.Details.ToLower().Contains(searchPattern.ToLower()))
+                           where this.allowMeetings && m.dateStart <= this.dateTo && m.dateFinish >= this.dateFrom && 
+                           (m.Subject.ToLower().Contains(searchPattern.ToLower()) || (searchPattern == "") || m.Details.ToLower().Contains(searchPattern.ToLower()))
                            select m;
                 tasks = from t in context.Tasks
-                        where this.allowTasks && t.dateStart <= this.dateTo && t.dateFinish >= this.dateFrom && (t.Subject.ToLower().Contains(searchPattern.ToLower()) || (searchPattern == "") || t.Details.ToLower().Contains(searchPattern.ToLower()))
+                        where this.allowTasks && t.dateStart <= this.dateTo && t.dateFinish >= this.dateFrom && 
+                        (t.Subject.ToLower().Contains(searchPattern.ToLower()) || (searchPattern == "") || t.Details.ToLower().Contains(searchPattern.ToLower()))
                         select t;
                 var list = notes.Concat(meetings as IEnumerable<Entry>).Concat(tasks).ToList();
                 list.Sort(delegate (Entry x, Entry y)

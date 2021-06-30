@@ -281,7 +281,7 @@
 @{
     DateTime dateFrom = Model.dateFrom;
     DateTime dateTo = Model.dateTo;
-    await DrawCalendar(dateFrom);
+    await DrawCalendar(dateFrom); //Можно написать другие методы для отрисовки списков дней
     await DrawFormAddEntry();
     await DrawFormApplyFilters();
     await DrawTaskList(dateFrom, dateTo);
