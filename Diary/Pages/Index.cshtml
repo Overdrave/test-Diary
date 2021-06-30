@@ -9,7 +9,7 @@
 
 @functions
 {
-    private void DrawCalendar(DateTime selectedDate)
+    private async Task DrawCalendar(DateTime selectedDate)
     {
         if (selectedDate.Year < 2010)
         {
@@ -29,12 +29,12 @@
             startDaysFrom = startDaysFrom.AddDays(-7);
         }
 
-    <div class="calendar currentMonth">
-        <a href="/Index?dateFrom=@firstDayOfMonth.ToString("yyyy-MM-ddTHH:mm")&dateTo=@firstDayOfMonth.AddMonths(1).ToString("yyyy-MM-ddTHH:mm")" target="_self">
-            @monthStr, @year
-        </a>
-        
-    </div>
+        <div class="calendar currentMonth">
+            <a href="/Index?dateFrom=@firstDayOfMonth.ToString("yyyy-MM-ddTHH:mm")&dateTo=@firstDayOfMonth.AddMonths(1).ToString("yyyy-MM-ddTHH:mm")" target="_self">
+                @monthStr, @year
+            </a>
+
+        </div>
         <table width="100%" class="calendar" cellspacing="0" cellpadding="4" border="1">
             <tr>
                 <th class="padding"> </th>
@@ -67,7 +67,12 @@
 
                             <td class="@cellClass" value=@thisday.ToString("yyyy-MM-ddTHH:mm")>
                                 <a href="/Index?dateFrom=@thisday.ToString("yyyy-MM-ddTHH:mm")&dateTo=@thisday.AddDays(1).ToString("yyyy-MM-ddTHH:mm")" target="_self">
-                                    @thisday.Day.ToString()
+                                    <p>@thisday.Day.ToString()</p>
+                                    @{string entriesToday = "(" + Model.context.Entries.ToList().FindAll(x => x.dateStart <= thisday.AddDays(1) && x.dateStart >= thisday).Count.ToString() + ")";
+                                        if (entriesToday == "(0)")
+                                            entriesToday = "";
+                                    }
+                                    <p>@entriesToday</p>
                                 </a>
                             </td>
 
@@ -118,7 +123,7 @@
                         <label>Место</label>
                         <input name="entryPlace" />
                     </div>
-                    <input type="submit" value="Добавить событие" />
+                    <input type="submit" asp-page-handler="Add" value="Добавить событие" />
                 </div>
             </form>
         </div>
@@ -276,7 +281,7 @@
 @{
     DateTime dateFrom = Model.dateFrom;
     DateTime dateTo = Model.dateTo;
-    DrawCalendar(dateFrom);
+    await DrawCalendar(dateFrom);
     await DrawFormAddEntry();
     await DrawFormApplyFilters();
     await DrawTaskList(dateFrom, dateTo);

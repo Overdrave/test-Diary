@@ -21,6 +21,7 @@ namespace Diary.Pages
         public bool allowMeetings = true;
 
         public string message = "";
+        public DiaryContext context = new DiaryContext();
 
         public IEnumerable<DBModel.Entry> entries;
         public IEnumerable<DBModel.Meeting> meetings;
@@ -94,7 +95,7 @@ namespace Diary.Pages
 
             //Достаём информацию из базы данных
             Database.SetInitializer(new DropCreateDatabaseIfModelChanges<DiaryContext>());
-            DiaryContext context = new DiaryContext();
+            //DiaryContext context = new DiaryContext();
 
 
             //...но сначала проверяем, есть ли она
@@ -131,9 +132,9 @@ namespace Diary.Pages
 
         }
 
-        public void OnPost(int? entryType, string? entrySubject, string? entryDetails, DateTime? entryDateFrom, DateTime? entryDateTo, string? entryPlace)
+        public void OnPostAdd(int? entryType, string? entrySubject, string? entryDetails, DateTime? entryDateFrom, DateTime? entryDateTo, string? entryPlace)
         {
-            DiaryContext context = new DiaryContext();
+            Database.SetInitializer(new DropCreateDatabaseIfModelChanges<DiaryContext>());
             //Проверяем целостность данных и, если надо, исправляем их
             if (entryDateFrom == null)
             {
@@ -197,7 +198,8 @@ namespace Diary.Pages
 
         public void OnPostDelete(int? id, DateTime? dateFrom, DateTime? dateTo, int? allowNotes, int? allowMeetings, int? allowTasks)
         {
-            DiaryContext context = new DiaryContext();
+            Database.SetInitializer(new DropCreateDatabaseIfModelChanges<DiaryContext>());
+            //DiaryContext context = new DiaryContext();
 
             var entries = (from e in context.Entries
                            where e.ID == id
@@ -220,7 +222,8 @@ namespace Diary.Pages
 
         public void OnPostEdit(int? id, string? newSubject, string? newDetails, DateTime? newDateFrom, DateTime? newDateTo, string? newPlace, /*А теперь старые установки фильтров*/ DateTime? dateFrom, DateTime? dateTo, int? allowNotes, int? allowMeetings, int? allowTasks)
         {
-            DiaryContext context = new DiaryContext();
+            Database.SetInitializer(new DropCreateDatabaseIfModelChanges<DiaryContext>());
+            //DiaryContext context = new DiaryContext();
 
             var entries = (from e in context.Entries
                            where e.ID == id
@@ -267,7 +270,8 @@ namespace Diary.Pages
 
         public void OnPostDone(int? id, DateTime? dateFrom, DateTime? dateTo, int? allowNotes, int? allowMeetings, int? allowTasks)
         {
-            DiaryContext context = new DiaryContext();
+            Database.SetInitializer(new DropCreateDatabaseIfModelChanges<DiaryContext>());
+            //DiaryContext context = new DiaryContext();
 
             var entries = (from e in context.Entries
                            where e.ID == id
