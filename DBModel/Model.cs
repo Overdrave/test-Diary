@@ -32,8 +32,6 @@ namespace DBModel
 
     public class DiaryContext : DbContext
     {
-        // Имя будущей базы данных можно указать через
-        // вызов конструктора базового класса
         public DiaryContext() : base("Diary")
         {
         }
