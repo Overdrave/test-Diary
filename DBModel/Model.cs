@@ -13,7 +13,6 @@ namespace DBModel
         public string Subject { get; set; }
         public string Details { get; set; }
         public DateTime dateStart { get; set; }
-        
     }
 
     public class Meeting : Entry

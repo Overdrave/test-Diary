@@ -11,10 +11,11 @@
 {
     private void DrawCalendar(DateTime selectedDate)
     {
-        if (selectedDate.Year<2010)
+        if (selectedDate.Year < 2010)
         {
             Model.dateFrom = DateTime.Now.Date;
             Model.dateTo = Model.dateFrom.AddDays(1);
+            selectedDate = Model.dateFrom;
         }
         //Каждая кнопка даты по сути представляет собой установку фильтров: С 0 часов выбранного дня до 0 часов следующего дня
         string monthStr = selectedDate.ToString("MMMM");
@@ -28,7 +29,12 @@
             startDaysFrom = startDaysFrom.AddDays(-7);
         }
 
-        <div class="calendar currentMonth">@monthStr, @year </div>
+    <div class="calendar currentMonth">
+        <a href="/Index?dateFrom=@firstDayOfMonth.ToString("yyyy-MM-ddTHH:mm")&dateTo=@firstDayOfMonth.AddMonths(1).ToString("yyyy-MM-ddTHH:mm")" target="_self">
+            @monthStr, @year
+        </a>
+        
+    </div>
         <table width="100%" class="calendar" cellspacing="0" cellpadding="4" border="1">
             <tr>
                 <th class="padding"> </th>
@@ -45,47 +51,41 @@
             @{
                 for (int i = 0; i < 6; i++)
                 {
-                        <tr>
-                            @{DateTime dayStartingWeek = startDaysFrom.AddDays(i * 7);}
-                            <td class="padding">
-                                <a href="/Index?dateFrom=@dayStartingWeek.ToString("yyyy-MM-ddTHH:mm")&dateTo=@dayStartingWeek.AddDays(7).ToString("yyyy-MM-ddTHH:mm")" target="_self">
-                                    <img src="" />
-                                </a>
-                            </td>
-                            @for (int j = 0; j < 7; j++)
-                            {
-                                var cellClass = (j > 4) ? "weekend" : "workday";
-                                var thisday = startDaysFrom.AddDays(i * 7 + j);
-                                cellClass += (thisday.Month != selectedDate.Month) ? " otherMonth" : "";
-
-
-                                <td class="@cellClass" value=@thisday.ToString("yyyy-MM-ddTHH:mm")>
-                                    <a href="/Index?dateFrom=@thisday.ToString("yyyy-MM-ddTHH:mm")&dateTo=@thisday.AddDays(1).ToString("yyyy-MM-ddTHH:mm")" target="_self">
-                                        @thisday.Day.ToString()
-                                    </a>
-                                </td>
-
-                            }
+                    <tr>
+                        @{DateTime dayStartingWeek = startDaysFrom.AddDays(i * 7);}
                         <td class="padding">
                             <a href="/Index?dateFrom=@dayStartingWeek.ToString("yyyy-MM-ddTHH:mm")&dateTo=@dayStartingWeek.AddDays(7).ToString("yyyy-MM-ddTHH:mm")" target="_self">
                                 <img src="" />
                             </a>
                         </td>
-                        </tr>
+                        @for (int j = 0; j < 7; j++)
+                        {
+                            var cellClass = (j > 4) ? "weekend" : "workday";
+                            var thisday = startDaysFrom.AddDays(i * 7 + j);
+                            cellClass += (thisday.Month != selectedDate.Month) ? " otherMonth" : "";
+
+
+                            <td class="@cellClass" value=@thisday.ToString("yyyy-MM-ddTHH:mm")>
+                                <a href="/Index?dateFrom=@thisday.ToString("yyyy-MM-ddTHH:mm")&dateTo=@thisday.AddDays(1).ToString("yyyy-MM-ddTHH:mm")" target="_self">
+                                    @thisday.Day.ToString()
+                                </a>
+                            </td>
+
+                        }
+                        <td class="padding">
+                            <a href="/Index?dateFrom=@dayStartingWeek.ToString("yyyy-MM-ddTHH:mm")&dateTo=@dayStartingWeek.AddDays(7).ToString("yyyy-MM-ddTHH:mm")" target="_self">
+                                <img src="" />
+                            </a>
+                        </td>
+                    </tr>
                 }
             }
 
         </table>
     }
 
-    private async Task DrawTaskList(DateTime dFrom, DateTime dTo)
+    private async Task DrawFormAddEntry()
     {
-        /*Получаем коллекцию дел из БД*/
-
-        /**/
-
-        /*<label> Выбрано @dFrom по @dTo </label> */
-
         <div class="form">
             <form id="formAddEntry" method="post">
                 <h3>Новая заметка</h3>
@@ -124,15 +124,18 @@
         </div>
 
         <p />
+    }
 
-        <form id="formAddEntry" method="get">
+    private async Task DrawFormApplyFilters()
+    {
+        <form id="formFilters" method="get">
             <h5> Фильтры: </h5>
             <div class="data">
                 <div>
                     <label>C </label>
-                    <input type="datetime-local" name="dateFrom" value=@dFrom.ToString("yyyy-MM-ddTHH:mm") />
+                    <input type="datetime-local" name="dateFrom" value=@Model.dateFrom.ToString("yyyy-MM-ddTHH:mm") />
                     <label> по </label>
-                    <input type="datetime-local" name="dateTo" value=@dTo.ToString("yyyy-MM-ddTHH:mm") />
+                    <input type="datetime-local" name="dateTo" value=@Model.dateTo.ToString("yyyy-MM-ddTHH:mm") />
                 </div>
 
                 <div>
@@ -156,10 +159,18 @@
                         <option value="0" selected=@(!Model.allowTasks)>Нет</option>
                     </select>
                 </div>
+                <div>
+                    <label>Поиск: </label>
+                    <input name="searchPattern"></input>
+                </div>
                 <input type="submit" value="Применить фильтры" />
             </div>
         </form>
+    }
 
+    private async Task DrawTaskList(DateTime dFrom, DateTime dTo)
+    {
+        /*<label> Выбрано @dFrom по @dTo </label> */
 
         <p />
         <h3>Запланированные события</h3>
@@ -193,21 +204,28 @@
 
                         <tr>
                             <form id="EditOrDelete" method="post">
-                                <input name="id" value=@entry.ID hidden />
-                                <input name="dateFrom" value=@Model.dateFrom.ToString("yyyy-MM-ddTHH:mm") hidden />
-                                <input name="dateTo" value=@Model.dateTo.ToString("yyyy-MM-ddTHH:mm") hidden />
-                                <input name="allowNotes" value=@(Model.allowNotes ? 1: 0) hidden />
-                                <input name="allowTasks" value=@(Model.allowTasks ? 1: 0) hidden />
-                                <input name="allowMeetings" value=@(Model.allowMeetings ? 1: 0) hidden />
+
+                                @*Передаём фильтры через запрос. Ужасно, да.*@
+                                <input name="id" value=@entry.ID type="hidden" />
+                                <input name="dateFrom" value=@dFrom.ToString("yyyy-MM-ddTHH:mm") type="hidden" />
+                                <input name="dateTo" value=@dTo.ToString("yyyy-MM-ddTHH:mm") type="hidden" />
+                                <input name="allowNotes" value=@(Model.allowNotes ? 1: 0) type="hidden" />
+                                <input name="allowTasks" value=@(Model.allowTasks ? 1: 0) type="hidden" />
+                                <input name="allowMeetings" value=@(Model.allowMeetings ? 1: 0) type="hidden" />
+
+                                @*-------------"Выполненность"--------------*@
                                 @{string done = entry.Done ? "✓" : " ";}
-                            <td class="done" style="min-width:50px; text-align:center">
-                                @*<p>@done</p>*@
-                                <p><input type="submit" asp-page-handler="Done" value="@done" style="min-width:30px" /></p>
-                            </td>
+                                <td class="done" style="min-width:50px; text-align:center">
+                                    @*<p>@done</p>*@
+                                    <p><input type="submit" asp-page-handler="Done" value="@done" style="min-width:30px" /></p>
+                                </td>
+
+                                @*----------------Даты--------------------*@
                                 <td colspan="@(useDateTo ? 1 : 2)">
                                     <p>@entry.dateStart</p>
                                     <input type="datetime-local" name="newDateFrom" value=@entry.dateStart.ToString("yyyy-MM-ddTHH:mm") />
                                 </td>
+
                                 @if (useDateTo)
                                 {
                                     <td>
@@ -215,13 +233,19 @@
                                         <input type="datetime-local" name="newDateTo" value=@dateF.ToString("yyyy-MM-ddTHH:mm") />
                                     </td>
                                 }
+
+                                @*--------------------Тема---------------------*@
                                 <td>
                                     <textarea name="newSubject" rows="3">@entry.Subject</textarea>
                                 </td>
+
+                                @*----------------Комментарий--------------------*@
                                 <td colspan="@(usePlace ? 1 : 2)">
                                     <h5> Комментарий: </h5>
                                     <p> <textarea name="newDetails" rows="3">@entry.Details</textarea> </p>
                                 </td>
+
+                                @*----------------Место встречи--------------------*@
                                 @if (usePlace)
                                 {
                                     <td>
@@ -229,6 +253,8 @@
                                         <p><textarea name="newPlace" rows="2">@(((DBModel.Meeting)entry).Place)</textarea> </p>
                                     </td>
                                 }
+
+                                @*----------------Действия--------------------*@
                                 <td>
                                     <p><input type="submit" asp-page-handler="Edit" value="Изменить" /></p>
                                     <p><input type="submit" asp-page-handler="Delete" value="Удалить" /></p>
@@ -248,9 +274,11 @@
 <h1 class="display-4">Приложение "Ежедневник"</h1>
 <h5>@Model.message</h5>
 @{
-    DateTime dateFrom = DateTime.Parse(Model.dateFrom.ToString());
-    DateTime dateTo = DateTime.Parse(Model.dateTo.ToString());
+    DateTime dateFrom = Model.dateFrom;
+    DateTime dateTo = Model.dateTo;
     DrawCalendar(dateFrom);
+    await DrawFormAddEntry();
+    await DrawFormApplyFilters();
     await DrawTaskList(dateFrom, dateTo);
 }
 

@@ -123,7 +123,7 @@ body {
 
 
 .calendar td.padding {
-    min-height: 150px;
+    height: 150px;
 }
 
 .calendar td a {
@@ -133,7 +133,7 @@ body {
 }
 
 .calendar td.padding a {
-    background-color: coral;
+/*    background-color: coral;*/
     display: block;
     width: 100%;
     height: 100%;

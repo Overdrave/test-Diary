@@ -27,7 +27,27 @@ namespace Diary.Pages
         public IEnumerable<DBModel.Task> tasks;
         public IEnumerable<DBModel.Note> notes;
 
+        private void RestoreFilters(DateTime? dateFrom, DateTime? dateTo, int? allowNotes, int? allowMeetings, int? allowTasks)
+        {
+            //Восстанавливаем фильтры
+            int aMeetings = (allowMeetings != null) ? allowMeetings.Value : 1;
+            int aNotes = (allowNotes != null) ? allowNotes.Value : 1;
+            int aTasks = (allowTasks != null) ? allowTasks.Value : 1;
 
+            DateTime dFrom = DateTime.Now;
+            DateTime dTo = DateTime.Now.AddDays(1);
+            if (dateFrom == null || dateTo == null || dateFrom.Value.Year < 2010 || dateTo.Value.Year < 2010 ||
+               dateFrom > dateTo)
+            {
+            }
+            else
+            {
+                dFrom = dateFrom.Value;
+                dTo = dateTo.Value;
+            }
+
+            OnGet(dFrom, dTo, aNotes, aMeetings, aTasks);
+        }
 
 
 
@@ -47,9 +67,11 @@ namespace Diary.Pages
                 return false;
         }
 
-
-        public void OnGet(DateTime dateFrom, DateTime dateTo, int? allowNotes, int? allowMeetings, int? allowTasks)
+        public void OnGet(DateTime dateFrom, DateTime dateTo, int? allowNotes, int? allowMeetings, int? allowTasks, string? searchPattern="")
         {
+            if (searchPattern==null)
+                searchPattern = "";
+
             if (allowMeetings != null)
                 this.allowMeetings = allowMeetings > 0 ? true : false; //Такая сложная конструкция на случай, если я найду способ сохранять фильтры при переключении по датам.
             if (allowNotes != null)
@@ -84,30 +106,27 @@ namespace Diary.Pages
             {
                 //Иначе же применяем фильтры и достаём
                 notes = from n in context.Notes
-                        where this.allowNotes && n.dateStart <= dateTo && n.dateStart >= dateFrom
+                        where this.allowNotes && n.dateStart <= this.dateTo && n.dateStart >= this.dateFrom && (n.Subject.ToLower().Contains(searchPattern.ToLower()) || (searchPattern=="") || n.Details.ToLower().Contains(searchPattern.ToLower()))
                         select n;
                 meetings = from m in context.Meetings
-                           where this.allowMeetings && m.dateStart <= dateTo && m.dateFinish >= dateFrom
+                           where this.allowMeetings && m.dateStart <= this.dateTo && m.dateFinish >= this.dateFrom && (m.Subject.ToLower().Contains(searchPattern.ToLower()) || (searchPattern == "") || m.Details.ToLower().Contains(searchPattern.ToLower()))
                            select m;
                 tasks = from t in context.Tasks
-                        where this.allowTasks && t.dateStart <= dateTo && t.dateFinish >= dateFrom
+                        where this.allowTasks && t.dateStart <= this.dateTo && t.dateFinish >= this.dateFrom && (t.Subject.ToLower().Contains(searchPattern.ToLower()) || (searchPattern == "") || t.Details.ToLower().Contains(searchPattern.ToLower()))
                         select t;
-                entries = notes.Concat(meetings as IEnumerable<Entry>).Concat(tasks);
+                var list = notes.Concat(meetings as IEnumerable<Entry>).Concat(tasks).ToList();
+                list.Sort(delegate (Entry x, Entry y)
+                {
+                    if (x.dateStart == null && y.dateStart == null) return 0;
+                    else if (x.dateStart == null) return -1;
+                    else if (y.dateStart == null) return 1;
+                    else if (x.dateStart > y.dateStart) return 1;
+                    else return -1;
+                });
+                entries = list;
+                    
+
                 ;
-                //join m in context.Meetings on e.ID equals m.ID
-                //join t in context.Tasks on e.ID equals t.ID
-                //join n in context.Notes on e.ID equals n.ID
-                //          where (e.dateStart <= dateTo) && (/*(m.dateFinish >= dateFrom) || (t.dateFinish >= dateFrom) ||*/true || (e is Note && e.dateStart>=dateFrom))
-                //          &&
-                //          (
-                //          (allowMeetings && (e is Meeting))
-                //          || (allowTasks && (e is DBModel.Task))
-                //          || (allowNotes && (e is Note))
-                //          )
-                //          select e
-
-
-                ; //RangeCollide(e.dateStart,e.dateFinish,this.dateFrom, this.dateTo) 
             }
 
         }
@@ -115,36 +134,43 @@ namespace Diary.Pages
         public void OnPost(int? entryType, string? entrySubject, string? entryDetails, DateTime? entryDateFrom, DateTime? entryDateTo, string? entryPlace)
         {
             DiaryContext context = new DiaryContext();
+            //Проверяем целостность данных и, если надо, исправляем их
             if (entryDateFrom == null)
             {
                 StatusCode(400);
                 return;
             }
+            if (entrySubject != null && entrySubject.Length > 200)
+                entrySubject = entrySubject.Substring(0, 2000);
+
+            if (entryDetails!=null && entryDetails.Length>2000)
+                entryDetails = entryDetails.Substring(0, 2000);
+
+            if (entryDateTo!=null && entryDateTo.Value<entryDateFrom)
+            {
+                entryDateTo = null; //Потом оно исправится на нужное
+            }
+
 
             if (entryType == 1)
             {
-                if (entryDateTo == null)
-                {
-                    StatusCode(400);
-                    return;
-                }
                 Meeting entry = new Meeting();
                 entry.Done = false;
                 entry.Subject = entrySubject;
                 entry.Details = entryDetails;
                 entry.dateStart = entryDateFrom.Value;
-                entry.dateFinish = (entryDateTo != null) ? entryDateTo.Value : entryDateFrom.Value;
+                entry.dateFinish = (entryDateTo != null) ? entryDateTo.Value : entryDateFrom.Value.AddMinutes(30);
                 entry.Place = entryPlace;
                 context.Meetings.Add(entry);
             }
             else if (entryType == 2)
             {
                 DBModel.Task entry = new DBModel.Task();
-                entry.Done = true; //Временно
+                entry.Done = false;
                 entry.Subject = entrySubject;
                 entry.Details = entryDetails;
                 entry.dateStart = entryDateFrom.Value;
-                entry.dateFinish = (entryDateTo != null) ? entryDateTo.Value : entryDateFrom.Value;
+                entry.dateFinish = (entryDateTo != null) ? entryDateTo.Value : entryDateFrom.Value.AddMinutes(30);
                 context.Tasks.Add(entry);
             }
             else
@@ -160,11 +186,13 @@ namespace Diary.Pages
             // Сохранить изменения в БД
             context.SaveChanges();
 
-            OnGet(entryDateFrom.Value.Date,
+            RestoreFilters(entryDateFrom, entryDateTo, (this.allowNotes? 1: 0), (this.allowNotes ? 1 : 0), (this.allowNotes ? 1 : 0));
+
+            /*OnGet(entryDateFrom.Value.Date,
                 (entryDateTo != null) ? entryDateTo.Value : entryDateFrom.Value.Date.AddDays(1),
                 (this.allowNotes) ? 1 : 0,
                 (this.allowMeetings) ? 1 : 0,
-                this.allowTasks ? 1 : 0);
+                this.allowTasks ? 1 : 0);*/
         }
 
         public void OnPostDelete(int? id, DateTime? dateFrom, DateTime? dateTo, int? allowNotes, int? allowMeetings, int? allowTasks)
@@ -187,24 +215,7 @@ namespace Diary.Pages
 
             context.SaveChanges();
 
-            //Редирект обратно
-            int aMeetings = (allowMeetings != null) ? allowMeetings.Value : 1;
-            int aNotes = (allowNotes != null) ? allowNotes.Value : 1;
-            int aTasks = (allowTasks != null) ? allowTasks.Value : 1;
-
-            DateTime dFrom = DateTime.Now;
-            DateTime dTo = DateTime.Now.AddDays(1);
-            if (dateFrom == null || dateTo == null || dateFrom.Value.Year < 2010 || dateTo.Value.Year < 2010 ||
-               dateFrom > dateTo)
-            {
-            }
-            else
-            {
-                dFrom = dateFrom.Value;
-                dTo = dateTo.Value;
-            }
-
-            OnGet(dFrom, dTo, aNotes, aMeetings, aTasks);
+            RestoreFilters(dateFrom, dateTo, allowNotes, allowMeetings, allowTasks);
         }
 
         public void OnPostEdit(int? id, string? newSubject, string? newDetails, DateTime? newDateFrom, DateTime? newDateTo, string? newPlace, /*А теперь старые установки фильтров*/ DateTime? dateFrom, DateTime? dateTo, int? allowNotes, int? allowMeetings, int? allowTasks)
@@ -251,24 +262,7 @@ namespace Diary.Pages
 
             context.SaveChanges();
 
-            //Восстанавливаем фильтры
-            int aMeetings = (allowMeetings != null) ? allowMeetings.Value : 1;
-            int aNotes = (allowNotes != null) ? allowNotes.Value : 1;
-            int aTasks = (allowTasks != null) ? allowTasks.Value : 1;
-
-            DateTime dFrom = DateTime.Now;
-            DateTime dTo = DateTime.Now.AddDays(1);
-            if (dateFrom == null || dateTo == null || dateFrom.Value.Year < 2010 || dateTo.Value.Year < 2010 ||
-               dateFrom > dateTo)
-            {
-            }
-            else
-            {
-                dFrom = dateFrom.Value;
-                dTo = dateTo.Value;
-            }
-
-            OnGet(dFrom, dTo, aNotes, aMeetings, aTasks);
+            RestoreFilters(dateFrom, dateTo, allowNotes, allowMeetings, allowTasks);
         }
 
         public void OnPostDone(int? id, DateTime? dateFrom, DateTime? dateTo, int? allowNotes, int? allowMeetings, int? allowTasks)
@@ -291,24 +285,7 @@ namespace Diary.Pages
 
             context.SaveChanges();
 
-            //Восстанавливаем фильтры
-            int aMeetings = (allowMeetings != null) ? allowMeetings.Value : 1;
-            int aNotes = (allowNotes != null) ? allowNotes.Value : 1;
-            int aTasks = (allowTasks != null) ? allowTasks.Value : 1;
-
-            DateTime dFrom = DateTime.Now;
-            DateTime dTo = DateTime.Now.AddDays(1);
-            if (dateFrom == null || dateTo == null || dateFrom.Value.Year < 2010 || dateTo.Value.Year < 2010 ||
-               dateFrom > dateTo)
-            {
-            }
-            else
-            {
-                dFrom = dateFrom.Value;
-                dTo = dateTo.Value;
-            }
-
-            OnGet(dFrom, dTo, aNotes, aMeetings, aTasks);
+            RestoreFilters(dateFrom, dateTo, allowNotes, allowMeetings, allowTasks);
 
 
 
